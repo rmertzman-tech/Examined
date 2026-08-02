@@ -492,9 +492,17 @@ async function callClaude(system,messages,maxTokens){
   }catch(networkErr){ throw new Error('NETWORK_ERROR: '+networkErr.message); }
   if(!resp.ok){ var errBody=await resp.text(); throw new Error('HTTP_'+resp.status+': '+errBody); }
   var data=await resp.json();
-  if(!data.content || !Array.isArray(data.content)) return '';
-  var textBlocks=data.content.filter(function(b){ return b && b.type==='text' && typeof b.text==='string'; });
-  return textBlocks.map(function(b){ return b.text; }).join('\n\n') || '';
+  var textBlocks = (data.content && Array.isArray(data.content))
+    ? data.content.filter(function(b){ return b && b.type==='text' && typeof b.text==='string'; })
+    : [];
+  var text = textBlocks.map(function(b){ return b.text; }).join('\n\n');
+  if(!text){
+    // A 200 response with no text block usually means the token budget ran out
+    // during the model's thinking phase, before it ever wrote a visible answer.
+    var reason = data.stop_reason || 'unknown';
+    throw new Error('EMPTY_RESPONSE: stop_reason='+reason+'. The model returned no visible text \u2014 most often this means it used its full token budget on extended thinking before writing an answer. Try again, or this request needs a higher token limit.');
+  }
+  return text;
 }
 
 async function testApiKey(){
@@ -691,7 +699,7 @@ async function generateProfile(){
   var sys='You are generating a personal philosophical profile for a person who has completed a moral framework assessment and answered six assembly history questions. Write exactly 5 paragraphs (600-800 words total): (1) how they tend to perceive moral situations, (2) their characteristic strengths, (3) the specific blind spots or tensions their framework creates, (4) themes woven from their assembly history without quoting directly, (5) a closing question they have probably been living with for years. Then a final short paragraph (80-110 words) naming the philosophical extension question this framework opens when they encounter people whose frameworks and circumstances differ substantially from their own. Do not moralize. Use second person throughout. Be personal and precise, not clinical or generic.\n\nPRF scores: Care='+scores.care+', Fairness='+scores.fair+', Loyalty='+scores.loyal+', Authority='+scores.auth+'\nPrimary foundation: '+PRF_NAMES[primary];
   var userContent='Assembly history responses:\n\n'+ASM_Q.map(function(q){return 'Q: '+q.q+'\nA: '+(asm[q.n]||'(not answered)');}).join('\n\n');
   try{
-    var text=await callClaude(sys,[{role:'user',content:userContent}],2500);
+    var text=await callClaude(sys,[{role:'user',content:userContent}],4000);
     state.profile=text;saveState();
     showEl('profile-result'); renderProfile();
   }catch(e){
@@ -709,6 +717,7 @@ async function generateProfile(){
     if(e.message.includes('HTTP_401'))errDiv.textContent='\u2717 API key rejected (401). Use "Test API connection" on the previous screen to confirm the key. Check console.anthropic.com to verify it\u2019s active.';
     else if(e.message.includes('HTTP_429'))errDiv.textContent='\u2717 Rate limit hit (429). Wait a moment and try again.';
     else if(e.message.includes('HTTP_400'))errDiv.textContent='\u2717 The request was rejected (400) \u2014 often means an invalid model string or malformed request. Details: '+e.message;
+    else if(e.message.includes('EMPTY_RESPONSE'))errDiv.textContent='\u2717 The model used its full token budget without writing a visible answer (this is what happened). Try clicking Generate again \u2014 it does not always recur.';
     else if(e.message.includes('NETWORK_ERROR'))errDiv.textContent='\u2717 Network/CORS error \u2014 the browser blocked the request to the proxy. Check that the proxy server is awake and reachable.';
     else if(e.message.includes('No API'))errDiv.textContent='\u2717 No API key configured on the server side. Contact your instructor.';
     else errDiv.textContent='\u2717 Error: '+e.message+'. Open browser DevTools (F12 \u2192 Console) for the full trace.';
@@ -797,6 +806,7 @@ async function sendMessage(){
   }catch(e){
     thinking.remove();
     var err='I had trouble connecting. Please check your internet connection and try again.';
+    if(e.message && e.message.includes('EMPTY_RESPONSE')) err='That response didn\u2019t come through \u2014 try asking again.';
     appendMsg('assistant',err);
     console.error('Companion error:',e);
   }
