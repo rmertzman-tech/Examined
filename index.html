@@ -497,10 +497,10 @@ async function callClaude(system,messages,maxTokens){
     : [];
   var text = textBlocks.map(function(b){ return b.text; }).join('\n\n');
   if(!text){
-    // A 200 response with no text block usually means the token budget ran out
-    // during the model's thinking phase, before it ever wrote a visible answer.
-    var reason = data.stop_reason || 'unknown';
-    throw new Error('EMPTY_RESPONSE: stop_reason='+reason+'. The model returned no visible text \u2014 most often this means it used its full token budget on extended thinking before writing an answer. Try again, or this request needs a higher token limit.');
+    // Show the ACTUAL raw shape of what came back, rather than guessing why it's empty.
+    var raw;
+    try{ raw = JSON.stringify(data).slice(0,600); }catch(e){ raw = String(data).slice(0,600); }
+    throw new Error('EMPTY_RESPONSE: stop_reason='+(data.stop_reason||'(none present)')+' | raw response: '+raw);
   }
   return text;
 }
@@ -717,7 +717,7 @@ async function generateProfile(){
     if(e.message.includes('HTTP_401'))errDiv.textContent='\u2717 API key rejected (401). Use "Test API connection" on the previous screen to confirm the key. Check console.anthropic.com to verify it\u2019s active.';
     else if(e.message.includes('HTTP_429'))errDiv.textContent='\u2717 Rate limit hit (429). Wait a moment and try again.';
     else if(e.message.includes('HTTP_400'))errDiv.textContent='\u2717 The request was rejected (400) \u2014 often means an invalid model string or malformed request. Details: '+e.message;
-    else if(e.message.includes('EMPTY_RESPONSE'))errDiv.textContent='\u2717 The model used its full token budget without writing a visible answer (this is what happened). Try clicking Generate again \u2014 it does not always recur.';
+    else if(e.message.includes('EMPTY_RESPONSE'))errDiv.textContent='\u2717 '+e.message;
     else if(e.message.includes('NETWORK_ERROR'))errDiv.textContent='\u2717 Network/CORS error \u2014 the browser blocked the request to the proxy. Check that the proxy server is awake and reachable.';
     else if(e.message.includes('No API'))errDiv.textContent='\u2717 No API key configured on the server side. Contact your instructor.';
     else errDiv.textContent='\u2717 Error: '+e.message+'. Open browser DevTools (F12 \u2192 Console) for the full trace.';
