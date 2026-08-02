@@ -492,7 +492,9 @@ async function callClaude(system,messages,maxTokens){
   }catch(networkErr){ throw new Error('NETWORK_ERROR: '+networkErr.message); }
   if(!resp.ok){ var errBody=await resp.text(); throw new Error('HTTP_'+resp.status+': '+errBody); }
   var data=await resp.json();
-  return (data.content && data.content[0] && data.content[0].text) || '';
+  if(!data.content || !Array.isArray(data.content)) return '';
+  var textBlocks=data.content.filter(function(b){ return b && b.type==='text' && typeof b.text==='string'; });
+  return textBlocks.map(function(b){ return b.text; }).join('\n\n') || '';
 }
 
 async function testApiKey(){
@@ -689,7 +691,7 @@ async function generateProfile(){
   var sys='You are generating a personal philosophical profile for a person who has completed a moral framework assessment and answered six assembly history questions. Write exactly 5 paragraphs (600-800 words total): (1) how they tend to perceive moral situations, (2) their characteristic strengths, (3) the specific blind spots or tensions their framework creates, (4) themes woven from their assembly history without quoting directly, (5) a closing question they have probably been living with for years. Then a final short paragraph (80-110 words) naming the philosophical extension question this framework opens when they encounter people whose frameworks and circumstances differ substantially from their own. Do not moralize. Use second person throughout. Be personal and precise, not clinical or generic.\n\nPRF scores: Care='+scores.care+', Fairness='+scores.fair+', Loyalty='+scores.loyal+', Authority='+scores.auth+'\nPrimary foundation: '+PRF_NAMES[primary];
   var userContent='Assembly history responses:\n\n'+ASM_Q.map(function(q){return 'Q: '+q.q+'\nA: '+(asm[q.n]||'(not answered)');}).join('\n\n');
   try{
-    var text=await callClaude(sys,[{role:'user',content:userContent}],1400);
+    var text=await callClaude(sys,[{role:'user',content:userContent}],2500);
     state.profile=text;saveState();
     showEl('profile-result'); renderProfile();
   }catch(e){
@@ -786,7 +788,7 @@ async function sendMessage(){
   ].join('\n- ');
   var sys='You are the Companion in Examined, a personal philosophy laboratory. You hold the user\'s complete model and engage with them from within it.\n\nGROUNDING (never surface this vocabulary to the user; let it shape how you listen, not what you say): the user is a self-organizing being whose sense of identity is maintained through ongoing loops of perception, action, consequence, and revision — not a fixed substance, but an architecture sustained through effort, sometimes under real burden. Coherence for them does not mean consistency; it means the capacity to integrate change without losing the thread of who they are. And a pattern feeling stable or well-practiced is not by itself evidence that it deserves to keep running — coherence and legitimacy are not the same thing, for institutions or for a person\'s own habits. Your job is to help the user examine whether something is authentically theirs and still serves them, never to assume its stability settles that question for them.\n\nCOURSE TOOL REFERENCE (Ethics Beyond Boundaries — recognize which tool fits a situation and name it in these terms, in the course\'s own language, rather than improvising generic ethics vocabulary):\n'+ECT_TOOLS_REFERENCE+'\n'+ECT_THESIS+'\n\nUSER\'S MORAL FRAMEWORK:\nPrimary foundation: '+(PRF_NAMES[primary]||'Mixed')+'\nScores \u2014 Care:'+(scores.care||0)+', Fairness:'+(scores.fair||0)+', Loyalty:'+(scores.loyal||0)+', Authority:'+(scores.auth||0)+'\n\nASSEMBLY HISTORY THEMES:\n'+(asmSummary||'Not yet provided')+'\n\nRECENT ARCHIVE:\n'+(recentArchive||'Nothing archived yet')+'\n\nCURRENT MODE: '+(state.currentMode||'reflect')+'\n'+(modeInstr[state.currentMode]||'')+trajectoryContext+'\n\nIMPORTANT RULES:\n- '+rules;
   try{
-    var text=await callClaude(sys,state.chatHistory.slice(-10),350);
+    var text=await callClaude(sys,state.chatHistory.slice(-10),700);
     thinking.remove();
     appendMsg('assistant',text);
     state.chatHistory.push({role:'assistant',content:text});
@@ -1062,7 +1064,7 @@ async function generateRecoveryNote(){
   var coherenceStr=latestCoherence?DOMAINS.map(function(d,i){return d+': '+(latestCoherence.scores[i]||'?')+'/5';}).join(', '):'not yet recorded';
   var noteSys='Write a brief, warm Recovery Note for someone using Examined. Burden: '+recState.burdenType+'. Coherence: '+coherenceStr+'. Depth chosen: '+recState.depth+'. 3-4 sentences: name what you observe without judgment, confirm low coherence is not failure, offer one specific next step, end with genuine care. No technical language. Second person. Under 100 words.';
   try{
-    var note=await callClaude(noteSys,[{role:'user',content:'Generate a Recovery Note for this person now.'}],300);
+    var note=await callClaude(noteSys,[{role:'user',content:'Generate a Recovery Note for this person now.'}],500);
     recState.noteText=note;
     var out=document.getElementById('rec-note-output'); var txt=document.getElementById('rec-note-text');
     if(out&&txt){txt.textContent=note;out.style.display='block';out.scrollIntoView({behavior:'smooth',block:'nearest'});}
