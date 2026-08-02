@@ -696,6 +696,20 @@ async function generateProfile(){
     showEl('profile-assembly');
     var notice=document.getElementById('no-key-notice');
     if(e.message.includes('No API')&&notice){notice.style.display='block';}
+    var errDiv=document.getElementById('gen-error-notice');
+    if(!errDiv){
+      errDiv=document.createElement('div');errDiv.id='gen-error-notice';
+      errDiv.style.cssText='background:#fee2e2;border:1px solid #7f1d1d;border-left:4px solid #7f1d1d;border-radius:.4rem;padding:.9rem 1.1rem;margin:.75rem 0;font-size:.84rem;color:#1a1612;line-height:1.7;font-family:"DM Mono",monospace';
+      var asmBtn=document.getElementById('asm-btn');
+      if(asmBtn&&asmBtn.parentNode)asmBtn.parentNode.insertBefore(errDiv,asmBtn);
+    }
+    errDiv.style.display='block';
+    if(e.message.includes('HTTP_401'))errDiv.textContent='\u2717 API key rejected (401). Use "Test API connection" on the previous screen to confirm the key. Check console.anthropic.com to verify it\u2019s active.';
+    else if(e.message.includes('HTTP_429'))errDiv.textContent='\u2717 Rate limit hit (429). Wait a moment and try again.';
+    else if(e.message.includes('HTTP_400'))errDiv.textContent='\u2717 The request was rejected (400) \u2014 often means an invalid model string or malformed request. Details: '+e.message;
+    else if(e.message.includes('NETWORK_ERROR'))errDiv.textContent='\u2717 Network/CORS error \u2014 the browser blocked the request to the proxy. Check that the proxy server is awake and reachable.';
+    else if(e.message.includes('No API'))errDiv.textContent='\u2717 No API key configured on the server side. Contact your instructor.';
+    else errDiv.textContent='\u2717 Error: '+e.message+'. Open browser DevTools (F12 \u2192 Console) for the full trace.';
     console.error('Examined profile error:',e);
   }
 }
