@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="examined-build" content="examined-nav-export-v1">
 <title>Examined — Your Personal Philosophy Laboratory</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@400;500&display=swap');
@@ -230,8 +231,10 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
       </div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">
         <button class="btn" onclick="swTab('companion')">Open the Companion &rarr;</button>
-        <button class="btn btn-out" onclick="exportProfile()">&#11015; Export profile</button>
+        <button class="btn btn-out" onclick="exportProfile()">&#11015; Export profile — TXT</button>
+        <button class="btn btn-out" onclick="exportForNavigator()" style="border-color:#0D5E57;color:#0D5E57">&#8644; Export for Navigator — JSON</button>
       </div>
+      <div id="navigator-export-status" role="status" aria-live="polite" style="margin-top:.65rem;font-size:.78rem;line-height:1.6;color:rgba(26,22,18,.58)">Use <strong>Export for Navigator — JSON</strong> to move compatible profile, assembly, conversation, archive, and coherence data into Navigator. Examined-only Recovery and Construct records are not included; preserve them with Backup Examined — JSON.</div>
       <div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
         <button class="btn btn-out" onclick="enrichProfile()" style="font-size:.82rem;border-color:#0D5E57;color:#0D5E57">&#9998; Add to my answers &amp; regenerate</button>
         <button class="btn btn-out" onclick="fullResetProfile()" style="font-size:.82rem;color:rgba(26,22,18,.45);border-color:rgba(26,22,18,.2)">&#8635; Start completely over</button>
@@ -437,9 +440,10 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
     <div id="archive-list"></div>
     <div id="archive-empty" style="text-align:center;padding:2rem;color:var(--muted);font-style:italic;display:none">Nothing archived yet.</div>
     <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
-      <button class="btn btn-out" onclick="exportArchive()">&#11015; Export archive</button>
-      <button class="btn btn-out" onclick="exportTwin()">&#128190; Backup full twin</button>
-      <button class="btn btn-out" onclick="importTwin()">&#128193; Restore twin from file</button>
+      <button class="btn btn-out" onclick="exportArchive()">&#11015; Export archive — TXT</button>
+      <button class="btn btn-out" onclick="exportForNavigator()">&#8644; Export for Navigator — JSON</button>
+      <button class="btn btn-out" onclick="exportTwin()">&#128190; Backup Examined — JSON</button>
+      <button class="btn btn-out" onclick="importTwin()">&#128193; Restore Examined from JSON</button>
       <button class="btn btn-out" onclick="generateLetter()">&#9997; Letter to future self</button>
     </div>
   </div>
@@ -1245,24 +1249,69 @@ function hardReset(){
   if(!confirm('This will clear all your data and start fresh. Are you sure?'))return;
   localStorage.removeItem('examined_v3'); location.reload();
 }
+function downloadExaminedFile(contents,mimeType,fileName){
+  var url=URL.createObjectURL(new Blob([contents],{type:mimeType}));
+  var a=document.createElement('a');
+  a.href=url; a.download=fileName;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} },0);
+}
 function exportProfile(){
   var scores=state.prfScores;
   var primary=Object.keys(scores).sort(function(a,b){return(scores[b]||0)-(scores[a]||0);})[0];
   var text='EXAMINED \u2014 My Philosophical Profile\n'+'='.repeat(50)+'\n\nPrimary foundation: '+(PRF_NAMES[primary]||'Mixed')+'\n\n'+(state.profile||'No profile generated yet.');
-  var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'})); a.download='Examined_Profile.txt';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  downloadExaminedFile(text,'text/plain;charset=utf-8','Examined_Profile.txt');
+}
+function buildNavigatorTransfer(){
+  var payload={
+    source:'Examined',
+    sourceApp:'Examined',
+    exportFormat:'examined-to-navigator-v1',
+    exportedAt:new Date().toISOString(),
+    profile:state.profile || null,
+    prfScores:JSON.parse(JSON.stringify(state.prfScores || {})),
+    asmAnswers:JSON.parse(JSON.stringify(state.asmAnswers || {})),
+    assembly:state.assembly ? JSON.parse(JSON.stringify(state.assembly)) : null,
+    chatHistory:JSON.parse(JSON.stringify(state.chatHistory || [])),
+    archive:JSON.parse(JSON.stringify(state.archive || [])),
+    coherenceHistory:JSON.parse(JSON.stringify(state.coherenceHistory || [])),
+    currentMode:state.currentMode || 'reflect'
+  };
+  payload.navigatorCompatibility={
+    version:'1',
+    importAction:'Merge JSON from Device',
+    compatibleFields:['profile','prfScores','asmAnswers','assembly','chatHistory','archive','coherenceHistory'],
+    omittedExaminedOnlyFields:['recoveryHistory','constructionProjects'],
+    note:'Navigator imports the listed compatible fields. Use Backup Examined — JSON to preserve Examined-only Recovery and Construct records.'
+  };
+  return payload;
+}
+function exportForNavigator(){
+  var scores=state.prfScores||{};
+  var hasTransferable=!!(state.profile || Object.keys(scores).some(function(k){return Number(scores[k])>0;}) || Object.keys(state.asmAnswers||{}).length || (state.chatHistory||[]).length || (state.archive||[]).length || (state.coherenceHistory||[]).length);
+  if(!hasTransferable){
+    alert('There is no compatible Examined work to export yet. Complete or save at least one profile, response, conversation, archive entry, or coherence check-in first.');
+    return;
+  }
+  try{
+    var ts=new Date().toISOString().slice(0,10);
+    var payload=buildNavigatorTransfer();
+    downloadExaminedFile(JSON.stringify(payload,null,2),'application/json;charset=utf-8','Examined-for-Navigator-'+ts+'.json');
+    var status=document.getElementById('navigator-export-status');
+    if(status) status.innerHTML='&#10003; Navigator transfer downloaded. In Navigator, open <strong>Memory / Export</strong> and choose <strong>Merge JSON from Device</strong>. Your Examined data remains here.';
+  }catch(e){
+    alert('Examined could not prepare the Navigator transfer: '+e.message);
+  }
 }
 function exportArchive(){
   var arch=state.archive||[];
   var text='EXAMINED \u2014 Good Ancestor Archive\n'+'='.repeat(50)+'\n\n';
   arch.forEach(function(e){text+=e.date+' ['+e.mode+']\n\n'+(e.text||e.exchange||'')+'\n\n'+'-'.repeat(50)+'\n\n';});
-  var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'})); a.download='Examined_Archive.txt';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  downloadExaminedFile(text,'text/plain;charset=utf-8','Examined_Archive.txt');
 }
 function exportTwin(){
   var ts=new Date().toISOString().slice(0,10);
-  var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})); a.download='examined-twin-'+ts+'.json';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  downloadExaminedFile(JSON.stringify(state,null,2),'application/json;charset=utf-8','examined-backup-'+ts+'.json');
 }
 function importTwin(){
   var input=document.createElement('input'); input.type='file'; input.accept='.json';
