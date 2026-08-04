@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="examined-build" content="examined-nav-export-response-completion-v2">
+<meta name="examined-build" content="examined-fall-2026-rc1">
 <title>Examined — Your Personal Philosophy Laboratory</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@400;500&display=swap');
 :root{
   --bg:#f8f6f1;--s:#eeeae1;--s2:#e4dfd4;--border:rgba(60,50,30,.12);
   --ink:#1a1612;--teal:#0D5E57;--tl:#e8f4f2;--amber:#92400e;--al:#fef3c7;
@@ -91,9 +90,13 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
 .loading-sub{ font-size:.85rem; color:var(--muted); }
 .dismiss-link{ color:rgba(26,22,18,.45); font-size:.78rem; font-style:italic; text-decoration:none; }
 .dismiss-link:hover{ color:rgba(26,22,18,.7); }
+
+.skip-link{position:fixed;left:12px;top:-60px;z-index:2000;background:#fff;color:#0D5E57;border:2px solid #0D5E57;border-radius:.35rem;padding:.55rem .75rem;font-family:sans-serif;font-weight:700;text-decoration:none}
+.skip-link:focus{top:12px}
 </style>
 </head>
 <body>
+<a class="skip-link" href="#workspace">Skip to main content</a>
 
 <!-- FIRST-ENTRY DISCLOSURE MODAL -->
 <div id="disclosure-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:1rem">
@@ -103,10 +106,10 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
     <div style="font-size:.88rem;line-height:1.8;color:#374151">
       <p style="margin:0 0 .75rem"><strong>What this tool is:</strong> Examined is a philosophical reflection tool supporting self-knowledge and values clarification. It is not a mental health service, not a substitute for therapy or counseling, and not designed for clinical use.</p>
       <p style="margin:0 0 .75rem"><strong>Your data stays in your browser:</strong> Your essays, profile, coherence readings, and conversation archive are stored only in this browser. Philosophy Lab Corporation has no database and cannot see what you write.</p>
-      <p style="margin:0 0 .75rem"><strong>When you use the Companion, messages are transmitted:</strong> Each message travels via an encrypted connection to Anthropic's Claude API, which processes your message and a summary of your profile to generate a response. Anthropic does not train its models on API data.</p>
+      <p style="margin:0 0 .75rem"><strong>When you use the Companion, messages are transmitted:</strong> Each message travels via an encrypted connection to Anthropic's Claude API, which processes your message and a summary of your profile to generate a response. Anthropic states that retained API data is not used for model training without express permission; retention can depend on the service configuration.</p>
       <p style="margin:0 0 .75rem"><strong>Examined also looks at patterns across your check-ins over time</strong> — for example, if your readings have been declining, or if one area has stayed low for a while — and may adjust its tone or suggest Recovery Mode based on those patterns. You can always see why, and you can always tell it a pattern doesn't fit.</p>
       <p style="margin:0 0 .75rem"><strong>Write only what you are comfortable transmitting to a third-party AI service.</strong> If you prefer not to transmit, use Local Reflection mode in the Companion tab.</p>
-      <p style="margin:0 0 .75rem"><strong>If you are in crisis:</strong> If you are experiencing thoughts of harming yourself or others, please contact a mental health professional or call or text <strong>988</strong> (Suicide &amp; Crisis Lifeline) rather than continuing with this app right now.</p>
+      <p style="margin:0 0 .75rem"><strong>If you are in crisis:</strong> Examined is not monitored, cannot contact help for you, and does not automatically notify your instructor. If you or someone else may be in immediate danger, call <strong>911</strong>. For suicidal crisis or emotional distress, call or text <strong>988</strong> (Suicide &amp; Crisis Lifeline) rather than relying on this app.</p>
       <p style="margin:0"><strong>This tool is designed for adults.</strong> If you are under 18, please seek a parent or guardian's guidance before using it.</p>
     </div>
     <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-top:1.25rem;padding-top:1rem;border-top:1px solid rgba(60,50,30,.1)">
@@ -135,7 +138,7 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
 </div>
 
 <!-- WORKSPACE -->
-<div class="workspace" id="workspace">
+<div class="workspace" id="workspace" role="main">
   <div class="nav-tabs">
     <button id="guide-btn" onclick="showGuide()" title="How to use Examined" style="display:none;position:absolute;right:.75rem;top:.75rem;background:transparent;border:1px solid rgba(13,94,87,.3);color:#0D5E57;border-radius:50%;width:1.6rem;height:1.6rem;font-size:.8rem;cursor:pointer;z-index:10;font-family:'DM Mono',monospace;line-height:1;padding:0">?</button>
     <button class="ntb active" onclick="swTab('profile')">My Profile</button>
@@ -156,11 +159,11 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
       <p class="phase-desc" style="margin-top:.6rem;font-style:italic;color:rgba(26,22,18,.65);font-size:.93rem;line-height:1.75">The Examined app holds that you are a moral agent — a being with values, history, and commitments that are genuinely yours. It holds equally that everyone you encounter is the same kind of being. Self-examination and the recognition of others as self-examining beings are not separate tasks. They are the same project, approached from the inside.</p>
       <p style="font-size:.8rem;color:rgba(26,22,18,.45);margin:.5rem 0 1rem;font-style:italic">Your data stays in this browser. Companion messages are encrypted and processed by Anthropic. <a href="#" onclick="swTab('about');return false;" style="color:#0D5E57">Privacy &amp; About &rarr;</a></p>
       <div id="no-key-notice" style="display:none;background:#fef3c7;border:1px solid #92400e;border-left:4px solid #92400e;border-radius:.4rem;padding:.9rem 1.1rem;margin:.75rem 0;font-size:.88rem;color:#1a1612;line-height:1.7">
-        <strong>Connection issue.</strong><br>Cannot reach the course server. Please check your internet connection, wait 30 seconds, and try the "Test API connection" button.
+        <strong>Connection issue.</strong><br>Cannot reach the course server. Please check your internet connection, wait 30 seconds, and try the "Test course AI connection" button.
       </div>
       <div style="margin-top:1.25rem;display:flex;gap:.65rem;flex-wrap:wrap;align-items:center">
         <button class="btn" onclick="startAssessment()">Begin the assessment &rarr;</button>
-        <button class="btn btn-out" id="test-key-btn" onclick="testApiKey()" style="font-size:.82rem">Test API connection</button>
+        <button class="btn btn-out" id="test-key-btn" onclick="testApiKey()" style="font-size:.82rem">Test course AI connection</button>
       </div>
       <div id="test-key-result" style="display:none;margin-top:.65rem;padding:.65rem .9rem;border-radius:.35rem;border:1px solid;font-size:.84rem;line-height:1.6;font-family:'DM Mono',monospace"></div>
     </div>
@@ -330,7 +333,7 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
       <div style="background:#f8f6f1;border:1px solid rgba(60,50,30,.15);border-radius:.45rem;padding:1rem">
         <div style="font-family:monospace;font-size:.6rem;color:rgba(60,50,30,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">&#128274; Local Reflection — nothing transmitted</div>
         <div id="local-prompt" style="font-family:serif;font-size:1.05rem;font-style:italic;color:#1a1612;margin-bottom:.7rem;line-height:1.65"></div>
-        <textarea id="local-text" placeholder="Write your reflection here. Nothing leaves your browser."></textarea>
+        <textarea id="local-text" aria-label="Local reflection text" placeholder="Write your reflection here. Nothing leaves your browser."></textarea>
         <div style="display:flex;gap:.5rem;margin-top:.65rem;flex-wrap:wrap">
           <button class="btn btn-sm" onclick="saveLocalReflection()">Save to archive</button>
         </div>
@@ -342,7 +345,7 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
         <div class="msg assistant">Welcome. I am your Companion &mdash; part of the Examined system that holds your model and thinks alongside you. I know your profile and something of your assembly history. I will not tell you what to think or who to become. My role is to help you think more clearly from within your own perspective.<br><br>What would you like to examine today?</div>
       </div>
       <div class="chat-input-row">
-        <input class="chat-input" id="chat-input" type="text" placeholder="What are you thinking about..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendMessage()">
+        <input class="chat-input" id="chat-input" aria-label="Message to the Examined Companion" type="text" placeholder="What are you thinking about..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendMessage()">
         <button class="btn" onclick="sendMessage()">&#9654;</button>
       </div>
     </div>
@@ -359,7 +362,7 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
       <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:#0D5E57;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.45rem">A question to hold</div>
       <p style="font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-style:italic;color:#1a1612;margin:0 0 .65rem;line-height:1.65">Is there anyone whose capacity to act from their values is being shaped — supported or limited — by your situation, decisions, or context right now?</p>
       <p style="font-size:.8rem;color:rgba(26,22,18,.5);margin:0 0 .6rem;font-style:italic">You don't need to solve this. Just notice it.</p>
-      <textarea id="relational-response" placeholder="A few words, or nothing at all…" style="min-height:70px"></textarea>
+      <textarea id="relational-response" aria-label="Optional relational reflection" placeholder="A few words, or nothing at all…" style="min-height:70px"></textarea>
     </div>
     <button class="btn" onclick="saveCoherence()" style="margin-top:.75rem">Save today's reading</button>
     <div style="margin-top:1.5rem">
@@ -382,10 +385,10 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
         <div class="phase-lbl" style="margin-bottom:.75rem">Step 1 of 3 — Name what's running</div>
         <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.02rem;margin-bottom:.4rem">What pattern have you noticed?</div>
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">Be specific — not "I get anxious," but "I go silent in meetings when a senior person disagrees with me."</p>
-        <textarea id="con-pattern" placeholder="Describe the specific pattern..."></textarea>
+        <textarea id="con-pattern" aria-label="Pattern being examined" placeholder="Describe the specific pattern..."></textarea>
         <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.02rem;margin:.85rem 0 .4rem">Where do you think this was built?</div>
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">Someone you watched? A place that trained you into it? Or is it genuinely yours — chosen, not inherited?</p>
-        <textarea id="con-origin" placeholder="Trace it back if you can..."></textarea>
+        <textarea id="con-origin" aria-label="Possible origin of the pattern" placeholder="Trace it back if you can..."></textarea>
         <div style="margin-top:.85rem"><button class="btn" onclick="conNext(2)" id="con-step1-next" disabled>Continue &rarr;</button></div>
       </div>
 
@@ -399,7 +402,7 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
         <div id="con-decision-why" style="display:none;margin-top:1rem">
           <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.02rem;margin-bottom:.4rem" id="con-why-label"></div>
           <p style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">Not a summary of the decision — the actual reasoning. What did you weigh?</p>
-          <textarea id="con-why-text" oninput="checkConWhy()" placeholder="Explain your reasoning..."></textarea>
+          <textarea id="con-why-text" aria-label="Reasoning about the pattern" oninput="checkConWhy()" placeholder="Explain your reasoning..."></textarea>
           <div style="margin-top:.75rem"><button class="btn" onclick="conProceedAfterWhy()" id="con-why-next" disabled>Continue &rarr;</button></div>
         </div>
       </div>
@@ -407,15 +410,15 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
       <div id="con-step3" style="display:none" class="panel teal">
         <div class="phase-lbl" style="margin-bottom:.75rem">Step 3 of 3 — Build the alternative</div>
         <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.02rem;margin-bottom:.4rem">What would you construct instead?</div>
-        <textarea id="con-target" placeholder="Be concrete — a specific alternative response or move, not a vague improvement."></textarea>
+        <textarea id="con-target" aria-label="Alternative response or construction target" placeholder="Be concrete — a specific alternative response or move, not a vague improvement."></textarea>
         <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.02rem;margin:.85rem 0 .4rem">Why this, specifically?</div>
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">What makes this feel authentically yours to build — not what you think you're supposed to want, or what worked for someone else?</p>
-        <textarea id="con-why-target" placeholder="Explain what makes this the right target for you..."></textarea>
+        <textarea id="con-why-target" aria-label="Reason for choosing the construction target" placeholder="Explain what makes this the right target for you..."></textarea>
         <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.02rem;margin:.85rem 0 .4rem">One small, real, checkable next step</div>
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">Not a resolution. An actual move you can make once, soon.</p>
-        <textarea id="con-nextstep" placeholder="What will you actually do?"></textarea>
+        <textarea id="con-nextstep" aria-label="Next construction step" placeholder="What will you actually do?"></textarea>
         <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.02rem;margin:.85rem 0 .4rem">When will you check whether this was real?</div>
-        <select id="con-checkback" style="padding:.5rem;border-radius:.35rem;border:1px solid var(--border);width:100%">
+        <select id="con-checkback" aria-label="Construction review interval" style="padding:.5rem;border-radius:.35rem;border:1px solid var(--border);width:100%">
           <option value="7">In one week</option>
           <option value="14" selected>In two weeks</option>
           <option value="30">In a month</option>
@@ -462,13 +465,13 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
     </div>
     <div style="background:#FEF2F2;border:1px solid rgba(153,27,27,.2);border-left:4px solid #991B1B;border-radius:.4rem;padding:.85rem 1rem;margin-bottom:.85rem">
       <div style="font-family:monospace;font-size:.6rem;color:#991B1B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">If you are in crisis</div>
-      <p style="font-size:.86rem;line-height:1.75;color:#374151;margin:0">If you are experiencing thoughts of harming yourself or others, or feel unable to care for yourself, please call or text <strong>988</strong> (Suicide &amp; Crisis Lifeline, available 24/7 in the US) or contact a mental health professional immediately.</p>
+      <p style="font-size:.86rem;line-height:1.75;color:#374151;margin:0">Examined is not monitored and cannot contact help for you. If you or someone else may be in immediate danger, call <strong>911</strong>. For suicidal crisis or emotional distress, call or text <strong>988</strong> (Suicide &amp; Crisis Lifeline, available 24/7 in the US).</p>
     </div>
     <div style="background:#f8f6f1;border-radius:.5rem;padding:1.1rem 1.25rem;margin-bottom:.85rem">
       <div style="font-family:monospace;font-size:.6rem;color:#0D5E57;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.45rem">For students</div>
       <p style="font-size:.86rem;line-height:1.75;color:#374151;margin:0">Your instructor cannot access your profile, essays, or Companion conversations unless you explicitly share them.</p>
     </div>
-    <div style="font-size:.8rem;color:rgba(26,22,18,.4);margin-top:.75rem;line-height:1.7">Philosophy Lab Corporation &bull; Examined &bull; 2026<br><a href="#" onclick="showDisclosureModal();return false;" style="color:#0D5E57">View initial disclosure again</a></div>
+    <div style="font-size:.8rem;color:rgba(26,22,18,.4);margin-top:.75rem;line-height:1.7">Philosophy Lab Corporation &bull; Examined &bull; 2026 &bull; Fall 2026 RC1<br><a href="#" onclick="showDisclosureModal();return false;" style="color:#0D5E57">View initial disclosure again</a></div>
   </div>
 
 </div>
@@ -493,7 +496,8 @@ async function requestClaude(system,messages,maxTokens){
   var resp;
   try{
     resp=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens||1200,system:system,messages:messages})});
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens||1200,system:system,messages:messages}),
+      credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(30000)});
   }catch(networkErr){ throw new Error('NETWORK_ERROR: '+networkErr.message); }
   if(!resp.ok){ var errBody=await resp.text(); throw new Error('HTTP_'+resp.status+': '+errBody); }
   var data=await resp.json();
@@ -613,7 +617,7 @@ async function testApiKey(){
   if(btn)btn.disabled=true; if(result){result.style.display='block';result.textContent='Testing...';}
   try{
     await callClaude('You are a test assistant. Reply with exactly: KEY_OK',[{role:'user',content:'test'}],20);
-    if(result){result.style.background='#dcfce7';result.style.borderColor='#14532d';result.style.color='#14532d';result.textContent='\u2713 API key is working.';}
+    if(result){result.style.background='#dcfce7';result.style.borderColor='#14532d';result.style.color='#14532d';result.textContent='\u2713 Course AI connection is working.';}
   }catch(e){
     var msg='\u2717 Error: '+e.message;
     if(result){result.style.background='#fee2e2';result.style.borderColor='#7f1d1d';result.style.color='#7f1d1d';result.textContent=msg;}
@@ -826,13 +830,13 @@ async function generateProfile(){
       if(asmBtn&&asmBtn.parentNode)asmBtn.parentNode.insertBefore(errDiv,asmBtn);
     }
     errDiv.style.display='block';
-    if(e.message.includes('HTTP_401'))errDiv.textContent='\u2717 API key rejected (401). Use "Test API connection" on the previous screen to confirm the key. Check console.anthropic.com to verify it\u2019s active.';
+    if(e.message.includes('HTTP_401'))errDiv.textContent='\u2717 API key rejected (401). Use "Test course AI connection" on the previous screen to confirm the key. Check console.anthropic.com to verify it\u2019s active.';
     else if(e.message.includes('HTTP_429'))errDiv.textContent='\u2717 Rate limit hit (429). Wait a moment and try again.';
     else if(e.message.includes('HTTP_400'))errDiv.textContent='\u2717 The request was rejected (400) \u2014 often means an invalid model string or malformed request. Details: '+e.message;
     else if(e.message.includes('EMPTY_RESPONSE'))errDiv.textContent='\u2717 '+e.message;
     else if(e.message.includes('INCOMPLETE_PROFILE'))errDiv.textContent='\u2717 The profile response was interrupted and could not be completed safely. Your answers are still saved. Select Generate my profile again. Details: '+e.message.replace('INCOMPLETE_PROFILE: ','');
     else if(e.message.includes('NETWORK_ERROR'))errDiv.textContent='\u2717 Network/CORS error \u2014 the browser blocked the request to the proxy. Check that the proxy server is awake and reachable.';
-    else if(e.message.includes('No API'))errDiv.textContent='\u2717 No API key configured on the server side. Contact your instructor.';
+    else if(e.message.includes('No API'))errDiv.textContent='\u2717 The course AI service is not configured. Contact your instructor.';
     else errDiv.textContent='\u2717 Error: '+e.message+'. Open browser DevTools (F12 \u2192 Console) for the full trace.';
     console.error('Examined profile error:',e);
   }
