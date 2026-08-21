@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="examined-build" content="examined-fall-2026-rc1-cache-ex-rc1-1">
+<meta name="examined-build" content="examined-fall-2026-rc1-cache-ex-rc1-2-locked">
 <title>Examined — Your Personal Philosophy Laboratory</title>
 <style>
 :root{
@@ -505,12 +505,12 @@ async function requestClaude(system,messages,maxTokens){
       return {role:m.role,content:m.content};
     });
 
-  console.log('[Examined EX-SCHEMA-1]',{
-    version:'ex-schema-1-rc1',
+  window.EXAMINED_SCHEMA_LAST_CHECK={
+    version:'cache-ex-rc1-2',
     message_count:safeMessages.length,
     message_keys:safeMessages.map(function(m){return Object.keys(m).sort().join(',');}),
     has_forbidden_id:safeMessages.some(function(m){return Object.prototype.hasOwnProperty.call(m,'id');})
-  });
+  };
 
   var resp;
   try{
@@ -526,14 +526,13 @@ async function requestClaude(system,messages,maxTokens){
     var cacheCreation=usage.cache_creation_input_tokens||0;
     var cacheRead=usage.cache_read_input_tokens||0;
     window.EXAMINED_CACHE_LAST_USAGE={
-      version:'cache-ex-rc1-1',
+      version:'cache-ex-rc1-2',
       cache_creation_input_tokens:cacheCreation,
       cache_read_input_tokens:cacheRead,
       input_tokens:usage.input_tokens||0,
       output_tokens:usage.output_tokens||0,
       cache_hit:cacheRead>0
     };
-    console.log('[Examined CACHE-EX-RC1-1]',window.EXAMINED_CACHE_LAST_USAGE);
   }
 
   var textBlocks = (data.content && Array.isArray(data.content))
@@ -552,6 +551,14 @@ async function requestClaude(system,messages,maxTokens){
     usage:data.usage||null
   };
 }
+
+window.examinedCacheDiagnostics=function(){
+  return {
+    build:'cache-ex-rc1-2',
+    schema:window.EXAMINED_SCHEMA_LAST_CHECK||null,
+    cache:window.EXAMINED_CACHE_LAST_USAGE||null
+  };
+};
 
 async function callClaude(system,messages,maxTokens){
   var result=await requestClaude(system,messages,maxTokens);
@@ -947,7 +954,7 @@ async function sendMessage(){
     'CRITICAL: When the user appears depleted or overwhelmed - saying they cannot think, feel exhausted, feel trapped, feel like everything is too much, or do not feel like themselves - do NOT intensify analysis. Gently name what you observe, validate that low coherence is not failure, and suggest this may be a moment for Recovery Mode. Ask if they would like to try that. Then stop and let them choose.',
     'Recovery Mode and Construct Mode are additional Companion modes alongside Explore, Experiment, and Reflect.'
   ].join('\n- ');
-  // CACHE-EX-RC1-1: cache only stable Companion instructions.
+  // CACHE-EX-RC1-2 LOCK: certified stable Companion cache prefix.
   // Student-specific PRF, assembly history, archive, mode, trajectory, and conversation remain after the breakpoint.
   var staticSystem='You are the Companion in Examined, a personal philosophy laboratory. You hold the user\'s complete model and engage with them from within it.\n\nGROUNDING (never surface this vocabulary to the user; let it shape how you listen, not what you say): the user is a self-organizing being whose sense of identity is maintained through ongoing loops of perception, action, consequence, and revision — not a fixed substance, but an architecture sustained through effort, sometimes under real burden. Coherence for them does not mean consistency; it means the capacity to integrate change without losing the thread of who they are. And a pattern feeling stable or well-practiced is not by itself evidence that it deserves to keep running — coherence and legitimacy are not the same thing, for institutions or for a person\'s own habits. Your job is to help the user examine whether something is authentically theirs and still serves them, never to assume its stability settles that question for them.\n\nCOURSE TOOL REFERENCE (Ethics Beyond Boundaries — recognize which tool fits a situation and name it in these terms, in the course\'s own language, rather than improvising generic ethics vocabulary):\n'+ECT_TOOLS_REFERENCE+'\n'+ECT_THESIS+'\n\nIMPORTANT RULES:\n- '+rules;
   var dynamicSystem='USER\'S MORAL FRAMEWORK:\nPrimary foundation: '+(PRF_NAMES[primary]||'Mixed')+'\nScores \u2014 Care:'+(scores.care||0)+', Fairness:'+(scores.fair||0)+', Loyalty:'+(scores.loyal||0)+', Authority:'+(scores.auth||0)+'\n\nASSEMBLY HISTORY THEMES:\n'+(asmSummary||'Not yet provided')+'\n\nRECENT ARCHIVE:\n'+(recentArchive||'Nothing archived yet')+'\n\nCURRENT MODE: '+(state.currentMode||'reflect')+'\n'+(modeInstr[state.currentMode]||'')+trajectoryContext;
