@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="examined-build" content="examined-fall-2026-rc1-cache-ex-rc1-2a-landing-restore">
+<meta name="examined-build" content="examined-fall-2026-rc1-cache-ex-rc1-2b-prf22-restore">
 <title>Examined — Your Personal Philosophy Laboratory</title>
 <style>
 :root{
@@ -119,6 +119,13 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
   </div>
 </div>
 
+<!-- Persistent import control shared by landing and Archive restore paths. -->
+<input id="examined-json-import-input"
+       type="file"
+       accept=".json,application/json"
+       onchange="handleExaminedImportInput(this)"
+       style="position:absolute;left:-10000px;width:1px;height:1px;opacity:0;overflow:hidden">
+
 <!-- LANDING PAGE -->
 <div class="landing" id="landing">
   <div class="landing-mark">Examined</div>
@@ -136,17 +143,20 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; he
        style="display:block;margin-top:1.15rem;padding-top:1rem;
               border-top:1px solid var(--border);text-align:center">
     <div style="font-size:.76rem;color:var(--muted);margin-bottom:.65rem">
-      Already have an Examined backup JSON?
+      Already completed PRF-22 or have an Examined backup?
     </div>
-    <button class="btn btn-out"
-            id="landing-json-restore-btn"
-            onclick="importTwin()"
-            style="font-size:.83rem">
-      &#128193; Restore Examined from JSON
-    </button>
+    <label class="btn btn-out"
+           id="landing-json-restore-btn"
+           for="examined-json-import-input"
+           role="button"
+           tabindex="0"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('examined-json-import-input').click();}"
+           style="font-size:.83rem;display:inline-block">
+      &#128193; Restore from PRF-22 or Examined JSON
+    </label>
     <div style="font-size:.72rem;color:var(--muted);
                 margin-top:.5rem;line-height:1.5">
-      Load your saved Examined workspace instead of beginning the assessment again.
+      Load your saved PRF-22 profile or Examined workspace instead of beginning the assessment again.
     </div>
   </div>
 </div>
@@ -1501,25 +1511,127 @@ function exportTwin(){
   var ts=new Date().toISOString().slice(0,10);
   downloadExaminedFile(JSON.stringify(state,null,2),'application/json;charset=utf-8','examined-backup-'+ts+'.json');
 }
-function importTwin(){
-  var input=document.createElement('input'); input.type='file'; input.accept='.json';
-  input.onchange=function(e){
-    var file=e.target.files[0]; if(!file)return;
-    var reader=new FileReader();
-    reader.onload=function(ev){
-      try{
-        var imported=JSON.parse(ev.target.result);
-        state=Object.assign(state,imported); saveState();
-        document.getElementById('landing').style.display='none';
-        document.getElementById('workspace').style.display='block';
-        if(state.profile){showProfileResult();}else{showEl('profile-start');}
-        buildCoherenceSliders();renderArchive();buildCoherenceChart();renderConstructionProjects();renderTrajectoryPanel();
-        alert('Twin restored successfully. Welcome back.');
-      }catch(err){alert('Could not read this file. Please use a twin file exported from Examined.');}
-    };
-    reader.readAsText(file);
+function freshExaminedImportState(){
+  return {
+    workspace:true,profile:null,assembly:null,
+    prfScores:{care:0,fair:0,loyal:0,auth:0},
+    prfAnswers:{},asmAnswers:{},
+    chatHistory:[],currentMode:'reflect',
+    coherenceHistory:[],archive:[],recoveryHistory:[],
+    constructionProjects:[],
+    trajectoryType:0,trajectoryDismissedUntil:0,recoverySuggestionDismissedUntil:0
   };
-  document.body.appendChild(input);input.click();document.body.removeChild(input);
+}
+
+function normalizeImportedExaminedState(imported){
+  if(!imported || typeof imported!=='object' || Array.isArray(imported)){
+    throw new Error('The selected file does not contain an Examined-compatible JSON object.');
+  }
+
+  var isPRF22=imported.exportedFrom==='prf22-gateway';
+  if(isPRF22){
+    if(!imported.prfScores || typeof imported.prfScores!=='object' ||
+       !imported.asmAnswers || typeof imported.asmAnswers!=='object' ||
+       typeof imported.profile!=='string' || !imported.profile.trim()){
+      throw new Error('This PRF-22 export is missing the profile information Examined needs.');
+    }
+  }else{
+    var looksExamined=('profile' in imported)||('prfScores' in imported)||
+      ('asmAnswers' in imported)||('chatHistory' in imported)||
+      ('archive' in imported)||('coherenceHistory' in imported);
+    if(!looksExamined){
+      throw new Error('This JSON is neither a current PRF-22 gateway export nor an Examined backup.');
+    }
+  }
+
+  var next=freshExaminedImportState();
+  var allowed=[
+    'profile','assembly','prfScores','prfAnswers','asmAnswers','chatHistory',
+    'currentMode','coherenceHistory','archive','recoveryHistory',
+    'constructionProjects','trajectoryType','trajectoryDismissedUntil',
+    'recoverySuggestionDismissedUntil'
+  ];
+  allowed.forEach(function(k){
+    if(Object.prototype.hasOwnProperty.call(imported,k)){next[k]=imported[k];}
+  });
+
+  var rawScores=(next.prfScores && typeof next.prfScores==='object')?next.prfScores:{};
+  next.prfScores={
+    care:Number(rawScores.care)||0,
+    fair:Number(rawScores.fair)||0,
+    loyal:Number(rawScores.loyal)||0,
+    auth:Number(rawScores.auth)||0
+  };
+  if(!next.prfAnswers || typeof next.prfAnswers!=='object' || Array.isArray(next.prfAnswers))next.prfAnswers={};
+  if(!next.asmAnswers || typeof next.asmAnswers!=='object' || Array.isArray(next.asmAnswers))next.asmAnswers={};
+  if(typeof next.profile!=='string')next.profile=null;
+  if(!Array.isArray(next.chatHistory))next.chatHistory=[];
+  if(!Array.isArray(next.coherenceHistory))next.coherenceHistory=[];
+  if(!Array.isArray(next.archive))next.archive=[];
+  if(!Array.isArray(next.recoveryHistory))next.recoveryHistory=[];
+  if(!Array.isArray(next.constructionProjects))next.constructionProjects=[];
+
+  var modes=['explore','experiment','reflect','construct','recover','local'];
+  if(modes.indexOf(next.currentMode)<0)next.currentMode='reflect';
+  next.workspace=true;
+
+  return {
+    state:next,
+    source:isPRF22?'prf22-gateway':'examined-backup'
+  };
+}
+
+function finishExaminedImport(result){
+  state=result.state;
+  saveState();
+  document.getElementById('landing').style.display='none';
+  document.getElementById('workspace').style.display='block';
+  if(state.profile){showProfileResult();}else{showEl('profile-start');}
+  buildCoherenceSliders();
+  renderArchive();
+  buildCoherenceChart();
+  renderConstructionProjects();
+  renderTrajectoryPanel();
+  updateGuideBtn();
+
+  if(result.source==='prf22-gateway'){
+    alert('PRF-22 profile restored successfully. Examined is ready to continue from your saved profile.');
+  }else{
+    alert('Examined backup restored successfully. Welcome back.');
+  }
+}
+
+function handleExaminedImportInput(input){
+  var file=input && input.files && input.files[0];
+  if(!file)return;
+
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var imported=JSON.parse(ev.target.result);
+      var result=normalizeImportedExaminedState(imported);
+      finishExaminedImport(result);
+    }catch(err){
+      alert('Could not restore this file: '+err.message);
+    }finally{
+      input.value='';
+    }
+  };
+  reader.onerror=function(){
+    alert('Examined could not read that file. Please choose the JSON file again.');
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+function importTwin(){
+  var input=document.getElementById('examined-json-import-input');
+  if(!input){
+    alert('Examined could not open the file chooser. Reload the page and try again.');
+    return;
+  }
+  input.value='';
+  input.click();
 }
 async function generateLetter(){
   swTab('companion');setMode('reflect');
@@ -1599,8 +1711,6 @@ function checkBrowserRestore(){
       }
     }catch(e){}
   }
-  var input=document.createElement('input'); input.type='file'; input.accept='.json';
-  input.onchange=function(e){ /* fallback handled by importTwin flow if needed */ };
   importTwin();
 }
 
