@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="examined-build" content="examined-fall-2026-rc1">
+<meta name="examined-build" content="examined-fall-2026-rc1-ex-schema-1">
 <title>Examined — Your Personal Philosophy Laboratory</title>
 <style>
 :root{
@@ -493,10 +493,29 @@ loadState();
 // EXAMINED-NAV-2 RESPONSE COMPLETION GUARD START
 async function requestClaude(system,messages,maxTokens){
   var PROXY='https://ucp-backend-4dig.onrender.com/api/claude-proxy';
+
+  // EX-SCHEMA-1: Anthropic input messages permit role + content only.
+  // Imported Examined JSON may contain local metadata (id, provenance, timestamps, etc.).
+  // Strip all local-only fields at the final network boundary.
+  var safeMessages=(Array.isArray(messages)?messages:[])
+    .filter(function(m){
+      return m && (m.role==='user'||m.role==='assistant') && typeof m.content==='string';
+    })
+    .map(function(m){
+      return {role:m.role,content:m.content};
+    });
+
+  console.log('[Examined EX-SCHEMA-1]',{
+    version:'ex-schema-1-rc1',
+    message_count:safeMessages.length,
+    message_keys:safeMessages.map(function(m){return Object.keys(m).sort().join(',');}),
+    has_forbidden_id:safeMessages.some(function(m){return Object.prototype.hasOwnProperty.call(m,'id');})
+  });
+
   var resp;
   try{
     resp=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens||1200,system:system,messages:messages}),
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens||1200,system:system,messages:safeMessages}),
       credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(30000)});
   }catch(networkErr){ throw new Error('NETWORK_ERROR: '+networkErr.message); }
   if(!resp.ok){ var errBody=await resp.text(); throw new Error('HTTP_'+resp.status+': '+errBody); }
